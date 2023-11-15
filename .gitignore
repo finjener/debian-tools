@@ -1,0 +1,7 @@
+backups
+logs
+deb_downloads
+downloads
+*.deb
+gui/target
+

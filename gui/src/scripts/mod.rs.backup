@@ -1,0 +1,444 @@
+//! Script registry - all debian-tools scripts
+
+mod types;
+pub mod runner;
+pub mod status;
+
+pub use types::*;
+
+use std::collections::HashMap;
+
+/// Registry of all available scripts
+pub struct ScriptRegistry {
+    order: Vec<ScriptMeta>,
+    index: HashMap<&'static str, usize>,
+}
+
+impl ScriptRegistry {
+    pub fn new() -> Self {
+        let mut order: Vec<ScriptMeta> = Vec::new();
+        let mut index: HashMap<&'static str, usize> = HashMap::new();
+
+        let mut push = |s: ScriptMeta| {
+            let id = s.id;
+            if index.contains_key(id) {
+                // In case of programmer error, keep first entry stable.
+                return;
+            }
+            index.insert(id, order.len());
+            order.push(s);
+        };
+
+        // Security scripts
+        push(ScriptMeta {
+            id: "ssh_keys",
+            name: "SSH Keys",
+            category: Category::Security,
+            script_type: ScriptType::BackupRestore,
+            filename: "security/ssh_keys.sh",
+            requires_sudo: false,
+            timeout_minutes: None,
+        });
+        push(ScriptMeta {
+            id: "gpg_keys",
+            name: "GPG Keys",
+            category: Category::Security,
+            script_type: ScriptType::BackupRestore,
+            filename: "security/gpg_keys.sh",
+            requires_sudo: false,
+            timeout_minutes: None,
+        });
+        push(ScriptMeta {
+            id: "kwallet",
+            name: "KWallet",
+            category: Category::Security,
+            script_type: ScriptType::BackupRestore,
+            filename: "security/kwallet_backup.sh",
+            requires_sudo: false,
+            timeout_minutes: None,
+        });
+        push(ScriptMeta {
+            id: "git_config",
+            name: "Git Config",
+            category: Category::Security,
+            script_type: ScriptType::BackupRestore,
+            filename: "security/git_config.sh",
+            requires_sudo: false,
+            timeout_minutes: None,
+        });
+
+        // Desktop scripts
+        push(ScriptMeta {
+            id: "kde_settings",
+            name: "KDE Settings",
+            category: Category::Desktop,
+            script_type: ScriptType::BackupRestore,
+            filename: "desktop/kde_settings.sh",
+            requires_sudo: false,
+            timeout_minutes: None,
+        });
+
+        // VPN scripts
+        push(ScriptMeta {
+            id: "mullvad",
+            name: "Mullvad VPN",
+            category: Category::Vpn,
+            script_type: ScriptType::InstallUninstall,
+            filename: "vpn/mullvad.sh",
+            requires_sudo: false,  // Handles own auth via dt_sudo
+            timeout_minutes: None,
+        });
+        push(ScriptMeta {
+            id: "ivpn",
+            name: "IVPN",
+            category: Category::Vpn,
+            script_type: ScriptType::InstallUninstall,
+            filename: "vpn/ivpn.sh",
+            requires_sudo: false,  // Handles own auth via dt_sudo
+            timeout_minutes: None,
+        });
+
+        push(ScriptMeta {
+            id: "nym_vpn",
+            name: "Nym VPN",
+            category: Category::Vpn,
+            script_type: ScriptType::InstallUninstall,
+            filename: "vpn/nym_vpn.sh",
+            requires_sudo: false,  // Handles own auth via dt_sudo
+            timeout_minutes: None,
+        });
+
+        // Browser scripts
+        push(ScriptMeta {
+            id: "brave",
+            name: "Brave Browser",
+            category: Category::Browsers,
+            script_type: ScriptType::InstallUninstall,
+            filename: "browsers/brave-browser.sh",
+            requires_sudo: false,  // Handles own auth via dt_sudo
+            timeout_minutes: None,
+        });
+        push(ScriptMeta {
+            id: "librewolf",
+            name: "LibreWolf",
+            category: Category::Browsers,
+            script_type: ScriptType::InstallUninstall,
+            filename: "browsers/librewolf.sh",
+            requires_sudo: false,  // Handles own auth via dt_sudo
+            timeout_minutes: None,
+        });
+        push(ScriptMeta {
+            id: "floorp",
+            name: "Floorp",
+            category: Category::Browsers,
+            script_type: ScriptType::InstallUninstall,
+            filename: "browsers/floorp.sh",
+            requires_sudo: false,  // Handles own auth via dt_sudo
+            timeout_minutes: None,
+        });
+
+        // AI Editor scripts
+        push(ScriptMeta {
+            id: "cursor",
+            name: "Cursor",
+            category: Category::Editors,
+            script_type: ScriptType::InstallUninstall,
+            filename: "ai-editors/cursor.sh",
+            requires_sudo: false,  // Handles own auth via dt_sudo
+            timeout_minutes: None,
+        });
+        push(ScriptMeta {
+            id: "windsurf",
+            name: "Windsurf",
+            category: Category::Editors,
+            script_type: ScriptType::InstallUninstall,
+            filename: "ai-editors/windsurf.sh",
+            requires_sudo: false,  // Handles own auth via dt_sudo
+            timeout_minutes: None,
+        });
+        push(ScriptMeta {
+            id: "antigravity",
+            name: "Antigravity",
+            category: Category::Editors,
+            script_type: ScriptType::InstallUninstall,
+            filename: "ai-editors/antigravity.sh",
+            requires_sudo: false,  // Handles own auth via dt_sudo
+            timeout_minutes: None,
+        });
+
+        // Package scripts
+        push(ScriptMeta {
+            id: "default_packages",
+            name: "Default Packages",
+            category: Category::Packages,
+            script_type: ScriptType::PackageManager,
+            filename: "packages/default_packages.sh",
+            requires_sudo: true,
+            timeout_minutes: None,
+        });
+        push(ScriptMeta {
+            id: "deb_packages",
+            name: "Deb Packages",
+            category: Category::Packages,
+            script_type: ScriptType::PackageManager,
+            filename: "packages/deb_packages.sh",
+            requires_sudo: false,  // Script handles its own sudo calls
+            timeout_minutes: None,
+        });
+        push(ScriptMeta {
+            id: "flatpak_packages",
+            name: "Flatpak Packages",
+            category: Category::Packages,
+            script_type: ScriptType::PackageManager,
+            filename: "packages/flatpak_packages.sh",
+            requires_sudo: false,
+            timeout_minutes: None,
+        });
+
+        // Gaming
+        push(ScriptMeta {
+            id: "steam",
+            name: "Steam",
+            category: Category::Gaming,
+            script_type: ScriptType::InstallUninstall,
+            filename: "gaming/steam.sh",
+            requires_sudo: false,  // Handles own auth via dt_sudo
+            timeout_minutes: None,
+        });
+
+        // Communication
+        push(ScriptMeta {
+            id: "signal",
+            name: "Signal",
+            category: Category::Communication,
+            script_type: ScriptType::InstallUninstall,
+            filename: "communication/signal.sh",
+            requires_sudo: false,  // Handles own auth via dt_sudo
+            timeout_minutes: None,
+        });
+        push(ScriptMeta {
+            id: "ente_auth",
+            name: "Ente Auth",
+            category: Category::Communication,
+            script_type: ScriptType::InstallUninstall,
+            filename: "communication/ente_auth.sh",
+            requires_sudo: false,
+            timeout_minutes: None,
+        });
+        push(ScriptMeta {
+            id: "ente_photos",
+            name: "Ente Photos",
+            category: Category::Communication,
+            script_type: ScriptType::InstallUninstall,
+            filename: "communication/ente_photos.sh",
+            requires_sudo: false,
+            timeout_minutes: None,
+        });
+
+        // Development scripts
+        push(ScriptMeta {
+            id: "vscodium",
+            name: "VSCodium",
+            category: Category::Development,
+            script_type: ScriptType::InstallUninstall,
+            filename: "development/vscodium.sh",
+            requires_sudo: false,  // Handles own auth via dt_sudo
+            timeout_minutes: None,
+        });
+        push(ScriptMeta {
+            id: "unityhub",
+            name: "Unity Hub",
+            category: Category::Development,
+            script_type: ScriptType::InstallUninstall,
+            filename: "development/unityhub.sh",
+            requires_sudo: false,  // Handles own auth via dt_sudo
+            timeout_minutes: None,
+        });
+        push(ScriptMeta {
+            id: "container_tools",
+            name: "Container Tools",
+            category: Category::Development,
+            script_type: ScriptType::InstallUninstall,
+            filename: "development/container_tools.sh",
+            requires_sudo: true,
+            timeout_minutes: None,
+        });
+        push(ScriptMeta {
+            id: "rust_dev",
+            name: "Rust Development",
+            category: Category::Development,
+            script_type: ScriptType::InstallUninstall,
+            filename: "development/rust_dev.sh",
+            requires_sudo: false,
+            timeout_minutes: None,
+        });
+
+        // System scripts
+        push(ScriptMeta {
+            id: "grub_config",
+            name: "GRUB Config",
+            category: Category::System,
+            script_type: ScriptType::Configure,
+            filename: "system/grub_config.sh",
+            requires_sudo: true,
+            timeout_minutes: None,
+        });
+        push(ScriptMeta {
+            id: "unstable_repo",
+            name: "Unstable Repo",
+            category: Category::System,
+            script_type: ScriptType::Configure,
+            filename: "system/unstable_repo.sh",
+            requires_sudo: true,
+            timeout_minutes: None,
+        });
+        push(ScriptMeta {
+            id: "sources_list_contrib_nonfree",
+            name: "Sources List (Contrib/Non-Free)",
+            category: Category::System,
+            script_type: ScriptType::Configure,
+            filename: "system/sources_list_contrib_nonfree.sh",
+            requires_sudo: true,
+            timeout_minutes: None,
+        });
+        push(ScriptMeta {
+            id: "bashrc_configs",
+            name: "Bashrc Configs",
+            category: Category::System,
+            script_type: ScriptType::BackupRestore,
+            filename: "system/bashrc_configs.sh",
+            requires_sudo: false,
+            timeout_minutes: None,
+        });
+        push(ScriptMeta {
+            id: "add_to_sudoers",
+            name: "Add to Sudoers",
+            category: Category::System,
+            script_type: ScriptType::Configure,
+            filename: "system/add_to_sudoers.sh",
+            requires_sudo: true,
+            timeout_minutes: None,
+        });
+        push(ScriptMeta {
+            id: "user_groups",
+            name: "User Groups",
+            category: Category::System,
+            script_type: ScriptType::Configure,
+            filename: "system/user_groups.sh",
+            requires_sudo: true,
+            timeout_minutes: None,
+        });
+        push(ScriptMeta {
+            id: "change_os_id",
+            name: "Change OS ID",
+            category: Category::System,
+            script_type: ScriptType::Configure,
+            filename: "system/change_os_id.sh",
+            requires_sudo: true,
+            timeout_minutes: None,
+        });
+        push(ScriptMeta {
+            id: "systemd_resolved_config",
+            name: "Systemd Resolved Config",
+            category: Category::System,
+            script_type: ScriptType::Configure,
+            filename: "system/systemd_resolved_config.sh",
+            requires_sudo: true,
+            timeout_minutes: None,
+        });
+        push(ScriptMeta {
+            id: "xanmod",
+            name: "XanMod Kernel",
+            category: Category::System,
+            script_type: ScriptType::InstallUninstall,
+            filename: "system/xanmod.sh",
+            requires_sudo: false,
+            timeout_minutes: None,
+        });
+
+        // Android scripts
+        push(ScriptMeta {
+            id: "android_flash",
+            name: "Android Flash",
+            category: Category::Android,
+            script_type: ScriptType::Interactive,
+            filename: "android/android_flash.sh",
+            requires_sudo: false,
+            timeout_minutes: None,
+        });
+        push(ScriptMeta {
+            id: "android_pixel_root",
+            name: "Android Pixel Root",
+            category: Category::Android,
+            script_type: ScriptType::Interactive,
+            filename: "android/android_pixel_root.sh",
+            requires_sudo: false,
+            timeout_minutes: None,
+        });
+        push(ScriptMeta {
+            id: "android_wifi_puller",
+            name: "Android WiFi Puller",
+            category: Category::Android,
+            script_type: ScriptType::Interactive,
+            filename: "android/android_wifi_puller.sh",
+            requires_sudo: false,
+            timeout_minutes: None,
+        });
+
+        // Desktop scripts (additional)
+        push(ScriptMeta {
+            id: "sddm_kwallet_pam",
+            name: "SDDM KWallet PAM",
+            category: Category::Desktop,
+            script_type: ScriptType::Configure,
+            filename: "desktop/sddm_kwallet_pam.sh",
+            requires_sudo: true,
+            timeout_minutes: None,
+        });
+
+        // Virtualization
+        push(ScriptMeta {
+            id: "qemu_kvm",
+            name: "QEMU/KVM",
+            category: Category::Virtualization,
+            script_type: ScriptType::InstallUninstall,
+            filename: "virtualization/qemu_kvm.sh",
+            requires_sudo: true,
+            timeout_minutes: None,
+        });
+        push(ScriptMeta {
+            id: "waydroid",
+            name: "Waydroid",
+            category: Category::Virtualization,
+            script_type: ScriptType::InstallUninstall,
+            filename: "virtualization/waydroid.sh",
+            requires_sudo: true,
+            timeout_minutes: None,
+        });
+
+        Self { order, index }
+    }
+
+    pub fn get(&self, id: &str) -> Option<&ScriptMeta> {
+        self.index
+            .get(id)
+            .and_then(|i| self.order.get(*i))
+    }
+
+    pub fn by_category(&self, category: Category) -> Vec<&ScriptMeta> {
+        self.order
+            .iter()
+            .filter(|s| s.category == category)
+            .collect()
+    }
+
+    pub fn all(&self) -> impl Iterator<Item = &ScriptMeta> {
+        self.order.iter()
+    }
+}
+
+impl Default for ScriptRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
